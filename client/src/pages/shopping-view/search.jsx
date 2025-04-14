@@ -1,114 +1,125 @@
-import ProductDetailsDialog from "@/components/shopping-view/product-details";
-import ShoppingProductTile from "@/components/shopping-view/product-tile";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
+
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
-import { fetchProductDetails } from "@/store/shop/products-slice";
+import ShoppingProductTile from "@/components/shopping-view/product-tile";
+import ProductDetailsDialog from "@/components/shopping-view/product-details";
+
 import {
   getSearchResults,
   resetSearchResults,
 } from "@/store/shop/search-slice";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams } from "react-router-dom";
+import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
+import { fetchProductDetails } from "@/store/shop/products-slice";
 
 function SearchProducts() {
   const [keyword, setKeyword] = useState("");
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const debounceRef = useRef(null);
+
   const dispatch = useDispatch();
-  const { searchResults } = useSelector((state) => state.shopSearch);
-  const { productDetails } = useSelector((state) => state.shopProducts);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const { user } = useSelector((state) => state.auth);
-
-  const { cartItems } = useSelector((state) => state.shopCart);
   const { toast } = useToast();
+
+  const { searchResults, loading } = useSelector((state) => state.shopSearch);
+  const { productDetails } = useSelector((state) => state.shopProducts);
+  const { user } = useSelector((state) => state.auth);
+  const { cartItems } = useSelector((state) => state.shopCart);
+
   useEffect(() => {
-    if (keyword && keyword.trim() !== "" && keyword.trim().length > 3) {
-      setTimeout(() => {
-        setSearchParams(new URLSearchParams(`?keyword=${keyword}`));
-        dispatch(getSearchResults(keyword));
-      }, 1000);
+    const term = keyword.trim();
+
+    clearTimeout(debounceRef.current);
+
+    if (term.length >= 3) {
+      debounceRef.current = setTimeout(() => {
+        setSearchParams({ keyword: term });
+        dispatch(getSearchResults(term));
+      }, 500);
     } else {
-      setSearchParams(new URLSearchParams(`?keyword=${keyword}`));
+      setSearchParams({ keyword: "" });
       dispatch(resetSearchResults());
     }
   }, [keyword]);
 
-  function handleAddtoCart(getCurrentProductId, getTotalStock) {
-    console.log(cartItems);
-    let getCartItems = cartItems.items || [];
+  const handleAddtoCart = (productId, totalStock) => {
+    const items = cartItems.items || [];
+    const existing = items.find((item) => item.productId === productId);
 
-    if (getCartItems.length) {
-      const indexOfCurrentItem = getCartItems.findIndex(
-        (item) => item.productId === getCurrentProductId
-      );
-      if (indexOfCurrentItem > -1) {
-        const getQuantity = getCartItems[indexOfCurrentItem].quantity;
-        if (getQuantity + 1 > getTotalStock) {
-          toast({
-            title: `Only ${getQuantity} quantity can be added for this item`,
-            variant: "destructive",
-          });
-
-          return;
-        }
-      }
+    if (existing && existing.quantity + 1 > totalStock) {
+      toast({
+        title: `Only ${existing.quantity} of this product can be added.`,
+        variant: "destructive",
+      });
+      return;
     }
 
-    dispatch(
-      addToCart({
-        userId: user?.id,
-        productId: getCurrentProductId,
-        quantity: 1,
-      })
-    ).then((data) => {
-      if (data?.payload?.success) {
-        dispatch(fetchCartItems(user?.id));
-        toast({
-          title: "Product is added to cart",
-        });
+    dispatch(addToCart({ userId: user?.id, productId, quantity: 1 })).then(
+      (res) => {
+        if (res?.payload?.success) {
+          dispatch(fetchCartItems(user?.id));
+          toast({ title: "Product added to cart." });
+        }
       }
-    });
-  }
+    );
+  };
 
-  function handleGetProductDetails(getCurrentProductId) {
-    console.log(getCurrentProductId);
-    dispatch(fetchProductDetails(getCurrentProductId));
-  }
+  const handleGetProductDetails = (productId) => {
+    dispatch(fetchProductDetails(productId));
+  };
 
   useEffect(() => {
-    if (productDetails !== null) setOpenDetailsDialog(true);
+    if (productDetails) setOpenDetailsDialog(true);
   }, [productDetails]);
 
-  console.log(searchResults, "searchResults");
-
   return (
-    <div className="container mx-auto md:px-6 px-4 py-8">
-      <div className="flex justify-center mb-8">
-        <div className="w-full flex items-center">
-          <Input
-            value={keyword}
-            name="keyword"
-            onChange={(event) => setKeyword(event.target.value)}
-            className="py-6"
-            placeholder="Search Products..."
-          />
-        </div>
+    <div className="container mx-auto px-4 md:px-6 py-10">
+      {/* 🔍 Search Bar */}
+      <div className="flex flex-col items-center mb-10 text-center">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          Search for Products
+        </h2>
+        <p className="text-gray-500 mb-4 max-w-md">
+          Start typing to explore our product range.
+        </p>
+
+        <Input
+          value={keyword}
+          name="keyword"
+          onChange={(e) => setKeyword(e.target.value)}
+          className="w-full max-w-lg py-6"
+          placeholder="Search Products..."
+        />
       </div>
-      {!searchResults.length ? (
-        <h1 className="text-5xl font-extrabold">No result found!</h1>
-      ) : null}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-        {searchResults.map((item) => (
+
+      {/* 🔄 Search Results */}
+      {loading && (
+        <p className="text-center text-gray-500 mb-6 animate-pulse">
+          Searching products...
+        </p>
+      )}
+
+      {!loading && searchResults.length === 0 && keyword.length >= 3 && (
+        <p className="text-center text-2xl text-gray-500 mb-8">
+          😞 No results found.
+        </p>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {searchResults.map((product) => (
           <ShoppingProductTile
+            key={product._id}
+            product={product}
             handleAddtoCart={handleAddtoCart}
-            product={item}
             handleGetProductDetails={handleGetProductDetails}
           />
         ))}
       </div>
+
+      {/* 🧾 Product Details Dialog */}
       <ProductDetailsDialog
         open={openDetailsDialog}
         setOpen={setOpenDetailsDialog}

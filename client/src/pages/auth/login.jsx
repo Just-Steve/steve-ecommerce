@@ -13,13 +13,42 @@ const initialState = {
 
 function AuthLogin() {
   const [formData, setFormData] = useState(initialState);
+  const [isSubmitting, setIsSubmitting] = useState(false);  
   const dispatch = useDispatch();
   const { toast } = useToast();
 
-  function onSubmit(event) {
+  
+  const validateForm = () => {
+    if (!formData.email || !formData.password) {
+      toast({
+        title: "Please fill in both fields.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailPattern.test(formData.email)) {
+      toast({
+        title: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  
+  async function onSubmit(event) {
     event.preventDefault();
 
-    dispatch(loginUser(formData)).then((data) => {
+    if (!validateForm()) return;  
+
+    setIsSubmitting(true); 
+
+    try {
+      const data = await dispatch(loginUser(formData));
+
       if (data?.payload?.success) {
         toast({
           title: data?.payload?.message,
@@ -30,7 +59,14 @@ function AuthLogin() {
           variant: "destructive",
         });
       }
-    });
+    } catch (error) {
+      toast({
+        title: "An error occurred. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false); 
+    }
   }
 
   return (
@@ -40,7 +76,7 @@ function AuthLogin() {
           Sign in to your account
         </h1>
         <p className="mt-2">
-          Don't have an account
+          Don't have an account?
           <Link
             className="font-medium ml-2 text-primary hover:underline"
             to="/auth/register"
@@ -51,7 +87,7 @@ function AuthLogin() {
       </div>
       <CommonForm
         formControls={loginFormControls}
-        buttonText={"Sign In"}
+        buttonText={isSubmitting ? "Signing In..." : "Sign In"}  
         formData={formData}
         setFormData={setFormData}
         onSubmit={onSubmit}
