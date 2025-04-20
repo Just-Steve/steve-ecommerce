@@ -2,10 +2,7 @@ const mongoose = require("mongoose");
 
 const FeatureSchema = new mongoose.Schema(
   {
-    image: { 
-      imageUrl: { type: String, required: true },
-      alt: { type: String, required: true } 
-    },
+    image: { type: String, required: true },
   },
   { timestamps: true }
 );
