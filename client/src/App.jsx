@@ -1,4 +1,4 @@
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import AuthLayout from "./components/auth/layout";
 import AuthLogin from "./pages/auth/login";
 import AuthRegister from "./pages/auth/register";
@@ -24,12 +24,14 @@ import AdminContent from "./components/admin-view/admin/pages/AdminContentManage
 import AdminNotifications from "./components/admin-view/admin/pages/AdminBigNotificationSystem";
 import AdminSettings from "./components/admin-view/admin/pages/AdminSettings";
 import AdminLogout from "./components/admin-view/admin/pages/AdminLogout";
+// import EditProductPage from "./components/admin-view/admin/components/EditProductPage";
 import ShoppingLayout from "./components/shopping-view/layout";
 import NotFound from "./pages/not-found";
 import ShoppingHome from "./pages/shopping-view/home";
 import ShoppingListing from "./pages/shopping-view/listing";
 import ShoppingCheckout from "./pages/shopping-view/checkout";
 import ShoppingAccount from "./pages/shopping-view/account";
+import CheckAuth from "./components/common/check-auth";
 import UnauthPage from "./pages/unauth-page";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
@@ -50,53 +52,47 @@ function App() {
     dispatch(checkAuth());
   }, [dispatch]);
 
-  if (isLoading) return <Skeleton className="w-full bg-gray-200 h-[600px]" />;
+  if (isLoading) return <Skeleton className="w-[800] bg-black h-[600px]" />;
 
-  // If user is not authenticated and not on auth routes, redirect to login
-  const currentPath = window.location.pathname;
-  const isAuthRoute = currentPath.startsWith('/auth');
-  
-  if (!isAuthenticated && !isAuthRoute && !isLoading) {
-    window.location.href = 'http://localhost:5173/auth/login';
-    return null;
-  }
+  console.log(isLoading, user);
 
   return (
     <div className="flex flex-col overflow-hidden bg-white">
       <Routes>
-        {/* Root route redirects to login if not authenticated */}
         <Route
           path="/"
           element={
-            isAuthenticated ? (
-              <Navigate to="/shop/home" replace />
-            ) : (
-              <Navigate to="/auth/login" replace />
-            )
+            <CheckAuth
+              isAuthenticated={isAuthenticated}
+              user={user}
+            ></CheckAuth>
           }
         />
-
-        {/* Auth routes - publicly accessible */}
-        <Route path="/auth" element={<AuthLayout />}>
+        <Route
+          path="/auth"
+          element={
+            <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+              <AuthLayout />
+            </CheckAuth>
+          }
+        >
           <Route path="login" element={<AuthLogin />} />
           <Route path="register" element={<AuthRegister />} />
         </Route>
-
-        {/* Protected admin routes */}
         <Route
           path="/admin"
           element={
-            isAuthenticated ? (
+            <CheckAuth isAuthenticated={isAuthenticated} user={user}>
               <AdminLayout />
-            ) : (
-              <Navigate to="/auth/login" replace />
-            )
+            </CheckAuth>
           }
         >
+          {/* UserDashboardLayout */}
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="features" element={<AdminFeatures />} />
+          {/* Admin Routes Grouped Together */}
           <Route path="manage-items" element={<AdminManageItems />} />
           <Route path="add-product" element={<AdminAddProduct />} />
           <Route path="edit-product/:id" element={<AdminEditProduct />} />
@@ -114,17 +110,14 @@ function App() {
           <Route path="notifications" element={<AdminNotifications />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="logout" element={<AdminLogout />} />
+          {/* <Route path="edit-product" element={<EditProductPage />} /> */}
         </Route>
-
-        {/* Protected shopping routes */}
         <Route
           path="/shop"
           element={
-            isAuthenticated ? (
+            <CheckAuth isAuthenticated={isAuthenticated} user={user}>
               <ShoppingLayout />
-            ) : (
-              <Navigate to="/auth/login" replace />
-            )
+            </CheckAuth>
           }
         >
           <Route path="user-dashboard" element={<UserDashboardLayout />} />
@@ -136,7 +129,6 @@ function App() {
           <Route path="payment-success" element={<PaymentSuccessPage />} />
           <Route path="search" element={<SearchProducts />} />
         </Route>
-
         <Route path="/unauth-page" element={<UnauthPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
