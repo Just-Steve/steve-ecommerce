@@ -54,14 +54,12 @@ const dummyClothingData = [
 ];
 
 const AdminDashboardWomenClothDashboard = ({ getIconForMenu }) => {
-  // State for storing clothing items and filter/sort options
   const [clothingItems, setClothingItems] = useState([]);
   const [filterCategory, setFilterCategory] = useState("All");
   const [sortOrder, setSortOrder] = useState("asc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch clothing items (simulate API call)
   const fetchClothingItems = async () => {
     try {
       setLoading(true);

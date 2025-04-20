@@ -7,27 +7,39 @@
 // function AdminDashboard() {
 //   const [imageFile, setImageFile] = useState(null);
 //   const [uploadedImageUrl, setUploadedImageUrl] = useState("");
-//   const [imageLoadingState, setImageLoadingState] = useState(false);
+//   const [isUploading, setIsUploading] = useState(false);
+//   const [uploadError, setUploadError] = useState("");
+
 //   const dispatch = useDispatch();
-//   const { featureImageList } = useSelector((state) => state.commonFeature);
+//   const featureImageList = useSelector((state) => state.commonFeature.featureImageList);
 
-//   console.log(uploadedImageUrl, "uploadedImageUrl");
-
-//   function handleUploadFeatureImage() {
-//     dispatch(addFeatureImage(uploadedImageUrl)).then((data) => {
-//       if (data?.payload?.success) {
-//         dispatch(getFeatureImages());
+//   const handleUploadFeatureImage = async () => {
+//     setUploadError("");
+//     if (!uploadedImageUrl) {
+//       setUploadError("No image URL provided");
+//       return;
+//     }
+//     setIsUploading(true);
+//     try {
+//       const result = await dispatch(addFeatureImage(uploadedImageUrl));
+//       if (result?.payload?.success) {
+//         await dispatch(getFeatureImages());
 //         setImageFile(null);
 //         setUploadedImageUrl("");
+//       } else {
+//         setUploadError("Failed to upload the image");
 //       }
-//     });
-//   }
+//     } catch (error) {
+//       console.error("Error while uploading the image:", error);
+//       setUploadError("An error occurred while uploading the image");
+//     } finally {
+//       setIsUploading(false);
+//     }
+//   };
 
 //   useEffect(() => {
 //     dispatch(getFeatureImages());
 //   }, [dispatch]);
-
-//   console.log(featureImageList, "featureImageList");
 
 //   return (
 //     <div>
@@ -36,25 +48,29 @@
 //         setImageFile={setImageFile}
 //         uploadedImageUrl={uploadedImageUrl}
 //         setUploadedImageUrl={setUploadedImageUrl}
-//         setImageLoadingState={setImageLoadingState}
-//         imageLoadingState={imageLoadingState}
+//         setImageLoadingState={setIsUploading}  // Prop renamed to meet the child's expectation
+//         imageLoadingState={isUploading}
 //         isCustomStyling={true}
-//         // isEditMode={currentEditedId !== null}
+//         isEditMode={false}                     // Provide a default value if needed
 //       />
-//       <Button onClick={handleUploadFeatureImage} className="mt-5 w-full">
-//         Upload
+//       <Button onClick={handleUploadFeatureImage} className="mt-5 w-full" disabled={isUploading}>
+//         {isUploading ? "Uploading..." : "Upload"}
 //       </Button>
+//       {uploadError && <p className="text-red-500 mt-2">{uploadError}</p>}
 //       <div className="flex flex-col gap-4 mt-5">
-//         {featureImageList && featureImageList.length > 0
-//           ? featureImageList.map((featureImgItem) => (
-//               <div className="relative">
-//                 <img
-//                   src={featureImgItem.image}
-//                   className="w-full h-[300px] object-cover rounded-t-lg"
-//                 />
-//               </div>
-//             ))
-//           : null}
+//         {featureImageList && featureImageList.length > 0 ? (
+//           featureImageList.map((featureImgItem) => (
+//             <div key={featureImgItem.id} className="relative">
+//               <img
+//                 src={featureImgItem.image}
+//                 className="w-full h-[300px] object-cover rounded-t-lg"
+//                 alt="Feature"
+//               />
+//             </div>
+//           ))
+//         ) : (
+//           <p>No feature images found.</p>
+//         )}
 //       </div>
 //     </div>
 //   );
@@ -71,66 +87,49 @@ function AdminDashboard() {
   const [imageFile, setImageFile] = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState("");
   const [imageLoadingState, setImageLoadingState] = useState(false);
-  const [uploadError, setUploadError] = useState(""); // To handle upload errors
   const dispatch = useDispatch();
   const { featureImageList } = useSelector((state) => state.commonFeature);
 
-  console.log(uploadedImageUrl, "uploadedImageUrl");
-
-  async function handleUploadFeatureImage() {
-    if (!uploadedImageUrl) {
-      setUploadError("No image URL provided");
-      return;
-    }
-
-    setImageLoadingState(true); // Start loading state
-    try {
-      const data = await dispatch(addFeatureImage(uploadedImageUrl));
-
+  function handleUploadFeatureImage() {
+    dispatch(addFeatureImage(uploadedImageUrl)).then((data) => {
       if (data?.payload?.success) {
         dispatch(getFeatureImages());
         setImageFile(null);
         setUploadedImageUrl("");
-        setUploadError(""); // Clear any previous error
-      } else {
-        setUploadError("Failed to upload the image");
       }
-    } catch (error) {
-      setUploadError("An error occurred while uploading the image");
-    } finally {
-      setImageLoadingState(false); // End loading state
-    }
+    });
   }
 
   useEffect(() => {
     dispatch(getFeatureImages());
   }, [dispatch]);
 
-  console.log(featureImageList, "featureImageList");
-
   return (
     <div>
-      <ProductImageUpload
-        imageFile={imageFile}
-        setImageFile={setImageFile}
-        uploadedImageUrl={uploadedImageUrl}
-        setUploadedImageUrl={setUploadedImageUrl}
-        setImageLoadingState={setImageLoadingState}
-        imageLoadingState={imageLoadingState}
-        isCustomStyling={true}
-      />
-      <Button onClick={handleUploadFeatureImage} className="mt-5 w-full" disabled={imageLoadingState}>
-        {imageLoadingState ? "Uploading..." : "Upload"}
+     <ProductImageUpload
+  imageFile={imageFile}
+  setImageFile={setImageFile}
+  uploadedImageUrl={uploadedImageUrl}
+  setUploadedImageUrl={setUploadedImageUrl}
+  setImageLoadingState={setImageLoadingState}
+  imageLoadingState={imageLoadingState}
+  isCustomStyling={true}
+  isEditMode={false} 
+/>
+
+
+      <Button onClick={handleUploadFeatureImage} className="mt-5 w-full">
+        Upload
       </Button>
-      {uploadError && <p className="text-red-500 mt-2">{uploadError}</p>}
+
       <div className="flex flex-col gap-4 mt-5">
-        {featureImageList && featureImageList.length > 0
-          ? featureImageList.map((featureImgItem) => (
-              <div key={featureImgItem.id} className="relative">
+        {featureImageList?.length > 0
+          ? featureImageList.map((item) => (
+              <div key={item._id} className="relative">
                 <img
-                  src={featureImgItem.image}
+                  src={item.image}
+                  alt={`Feature ${item._id}`}
                   className="w-full h-[300px] object-cover rounded-t-lg"
-                  alt="Feature Image"
                 />
               </div>
             ))

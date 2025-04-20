@@ -1,3 +1,186 @@
+// import { Fragment, useEffect, useState } from "react";
+// import { useDispatch, useSelector } from "react-redux";
+// import ProductImageUpload from "@/components/admin-view/image-upload";
+// import AdminProductTile from "@/components/admin-view/product-tile";
+// import CommonForm from "@/components/common/form";
+// import { Button } from "@/components/ui/button";
+// import {
+//   Sheet,
+//   SheetContent,
+//   SheetHeader,
+//   SheetTitle,
+// } from "@/components/ui/sheet";
+// import { useToast } from "@/components/ui/use-toast";
+// import { addProductFormElements } from "@/config";
+// import {
+//   addNewProduct,
+//   deleteProduct,
+//   editProduct,
+//   fetchAllProducts,
+// } from "@/store/admin/products-slice";
+
+// const initialFormData = {
+//   image: null,
+//   title: "",
+//   description: "",
+//   category: "",
+//   brand: "",
+//   price: "",
+//   salePrice: "",
+//   totalStock: "",
+//   averageReview: 0,
+// };
+
+// function AdminProducts() {
+//   const [openCreateProductsDialog, setOpenCreateProductsDialog] = useState(false);
+//   const [formData, setFormData] = useState(initialFormData);
+//   const [imageFile, setImageFile] = useState(null);
+//   const [uploadedImageUrl, setUploadedImageUrl] = useState("");
+//   const [imageLoadingState, setImageLoadingState] = useState(false);
+//   const [currentEditedId, setCurrentEditedId] = useState(null);
+
+//   const { productList } = useSelector((state) => state.adminProducts);
+//   const dispatch = useDispatch();
+//   const { toast } = useToast();
+
+//   useEffect(() => {
+//     dispatch(fetchAllProducts());
+//   }, [dispatch]);
+
+//   const isFormValid = () => {
+//     const requiredFields = Object.keys(formData).filter((key) => key !== "averageReview");
+//     return requiredFields.every((key) => formData[key]?.trim() !== "") && uploadedImageUrl !== "";
+//   };
+
+//   const resetForm = () => {
+//     setFormData(initialFormData);
+//     setUploadedImageUrl("");
+//     setImageFile(null);
+//     setCurrentEditedId(null);
+//   };
+
+//   const handleFormSubmit = (event) => {
+//     event.preventDefault();
+
+//     if (!isFormValid()) {
+//       toast({
+//         title: "All fields including the image are required",
+//         variant: "destructive",
+//       });
+//       return;
+//     }
+
+//     const action = currentEditedId !== null
+//       ? editProduct({ id: currentEditedId, formData })
+//       : addNewProduct({ ...formData, image: uploadedImageUrl });
+
+//     dispatch(action).then((res) => {
+//       if (res?.payload?.success) {
+//         dispatch(fetchAllProducts());
+//         resetForm();
+//         setOpenCreateProductsDialog(false);
+//         toast({
+//           title: currentEditedId ? "Product updated successfully" : "Product added successfully",
+//         });
+//       } else {
+//         toast({
+//           title: "An error occurred. Please try again.",
+//           variant: "destructive",
+//         });
+//       }
+//     });
+//   };
+
+//   const handleDelete = (productId) => {
+//     dispatch(deleteProduct(productId)).then((res) => {
+//       if (res?.payload?.success) {
+//         dispatch(fetchAllProducts());
+//         toast({ title: "Product deleted successfully" });
+//       } else {
+//         toast({
+//           title: "Failed to delete product",
+//           variant: "destructive",
+//         });
+//       }
+//     });
+//   };
+
+//   const handleEdit = (product) => {
+//     setFormData(product);
+//     setUploadedImageUrl(product.image);
+//     setCurrentEditedId(product.id);
+//     setOpenCreateProductsDialog(true);
+//   };
+
+//   return (
+//     <Fragment>
+//       <div className="mb-5 w-full flex justify-end">
+//         <Button onClick={() => setOpenCreateProductsDialog(true)}>
+//           Add New Product
+//         </Button>
+//       </div>
+
+//       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+//         {productList?.length > 0 ? (
+//           productList.map((productItem) => (
+//             <AdminProductTile
+//               key={productItem.id}
+//               product={productItem}
+//               handleDelete={handleDelete}
+//               setOpenCreateProductsDialog={setOpenCreateProductsDialog}
+//               setFormData={setFormData}
+//               setCurrentEditedId={setCurrentEditedId}
+//               setUploadedImageUrl={setUploadedImageUrl}
+//               onEdit={() => handleEdit(productItem)}
+//             />
+//           ))
+//         ) : (
+//           <p className="col-span-full text-center text-gray-500">No products found.</p>
+//         )}
+//       </div>
+
+//       <Sheet
+//         open={openCreateProductsDialog}
+//         onOpenChange={(open) => {
+//           setOpenCreateProductsDialog(open);
+//           if (!open) resetForm();
+//         }}
+//       >
+//         <SheetContent side="right" className="overflow-auto">
+//           <SheetHeader>
+//             <SheetTitle>
+//               {currentEditedId !== null ? "Edit Product" : "Add New Product"}
+//             </SheetTitle>
+//           </SheetHeader>
+
+//           <ProductImageUpload
+//             imageFile={imageFile}
+//             setImageFile={setImageFile}
+//             uploadedImageUrl={uploadedImageUrl}
+//             setUploadedImageUrl={setUploadedImageUrl}
+//             setImageLoadingState={setImageLoadingState}
+//             imageLoadingState={imageLoadingState}
+//             isEditMode={currentEditedId !== null}
+//           />
+
+//           <div className="py-6">
+//             <CommonForm
+//               onSubmit={handleFormSubmit}
+//               formData={formData}
+//               setFormData={setFormData}
+//               buttonText={currentEditedId !== null ? "Update" : "Add Product"}
+//               formControls={addProductFormElements}
+//               isBtnDisabled={!isFormValid()}
+//             />
+//           </div>
+//         </SheetContent>
+//       </Sheet>
+//     </Fragment>
+//   );
+// }
+
+// export default AdminProducts;
+
 import ProductImageUpload from "@/components/admin-view/image-upload";
 import AdminProductTile from "@/components/admin-view/product-tile";
 import CommonForm from "@/components/common/form";

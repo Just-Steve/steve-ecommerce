@@ -21,6 +21,7 @@ router.get("/get", fetchAllProducts);
 module.exports = router;
 
 
+
 // const express = require("express");
 // const {
 //   handleImageUpload,

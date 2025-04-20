@@ -6,15 +6,15 @@ const initialState = {
   addressList: [],
 };
 
+// Define async actions (thunks)
 export const addNewAddress = createAsyncThunk(
   "/addresses/addNewAddress",
   async (formData) => {
     const response = await axios.post(
-      "${import.meta.env.VITE_API_URL}/api/shop/address/add",
+      `${import.meta.env.VITE_API_URL}/api/shop/address/add`,
       formData
     );
-
-    return response.data;
+    return response.data; // return the data from response
   }
 );
 
@@ -24,8 +24,7 @@ export const fetchAllAddresses = createAsyncThunk(
     const response = await axios.get(
       `${import.meta.env.VITE_API_URL}/api/shop/address/get/${userId}`
     );
-
-    return response.data;
+    return response.data; // return the data from response
   }
 );
 
@@ -36,8 +35,7 @@ export const editaAddress = createAsyncThunk(
       `${import.meta.env.VITE_API_URL}/api/shop/address/update/${userId}/${addressId}`,
       formData
     );
-
-    return response.data;
+    return response.data; // return the data from response
   }
 );
 
@@ -47,11 +45,11 @@ export const deleteAddress = createAsyncThunk(
     const response = await axios.delete(
       `${import.meta.env.VITE_API_URL}/api/shop/address/delete/${userId}/${addressId}`
     );
-
-    return response.data;
+    return response.data; // return the data from response
   }
 );
 
+// Create the slice
 const addressSlice = createSlice({
   name: "address",
   initialState,
