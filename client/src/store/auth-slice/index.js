@@ -1,10 +1,16 @@
+// src/store/auth-slice.js
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// ENV API Base
+// Base URL from .env
 const API_URL = import.meta.env.VITE_API_URL;
 
-// Initial State
+// Helper to pull a human message out of any Axios error
+const extractErrorMessage = (err) =>
+  err?.response?.data?.message ||
+  err?.message ||
+  "Something went wrong. Please try again.";
+
 const initialState = {
   isAuthenticated: false,
   isLoading: false,
@@ -12,150 +18,166 @@ const initialState = {
   error: null,
 };
 
-// Helper to get readable error
-const extractErrorMessage = (error) => {
-  return (
-    error?.response?.data?.message ||
-    error?.message ||
-    "Something went wrong. Please try again."
-  );
-};
-
-// REGISTER
+// ─── REGISTER ───────────────────────────────────────────────────────────────
 export const registerUser = createAsyncThunk(
   "auth/register",
   async (formData, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${API_URL}/api/auth/register`, formData, {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true,
-      });
-      return res.data;
+      const { data } = await axios.post(
+        `${API_URL}/api/auth/register`,
+        formData,
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+      return data;
     } catch (err) {
       return rejectWithValue(extractErrorMessage(err));
     }
   }
 );
 
-// LOGIN
+// ─── LOGIN ──────────────────────────────────────────────────────────────────
 export const loginUser = createAsyncThunk(
   "auth/login",
   async (formData, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${API_URL}/api/auth/login`, formData, {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true,
-      });
-      return res.data;
+      const { data } = await axios.post(
+        `${API_URL}/api/auth/login`,
+        formData,
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+      return data;
     } catch (err) {
       return rejectWithValue(extractErrorMessage(err));
     }
   }
 );
 
-// LOGOUT
+// ─── LOGOUT ─────────────────────────────────────────────────────────────────
 export const logoutUser = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${API_URL}/api/auth/logout`, {}, {
-        withCredentials: true,
-      });
-      return res.data;
+      const { data } = await axios.post(
+        `${API_URL}/api/auth/logout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+      return data;
     } catch (err) {
       return rejectWithValue(extractErrorMessage(err));
     }
   }
 );
 
-// CHECK AUTH
+// ─── CHECK AUTH ─────────────────────────────────────────────────────────────
 export const checkAuth = createAsyncThunk(
   "auth/checkAuth",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_URL}/api/auth/check-auth`, {
-        withCredentials: true,
-        headers: {
-          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-        },
-      });
-      return res.data;
+      const { data } = await axios.get(
+        `${API_URL}/api/auth/check-auth`,
+        {
+          withCredentials: true,
+          headers: {
+            "Cache-Control":
+              "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+        }
+      );
+      return data;
     } catch (err) {
       return rejectWithValue(extractErrorMessage(err));
     }
   }
 );
 
-// SLICE
+// ─── SLICE ──────────────────────────────────────────────────────────────────
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
+    // Manually set the user (e.g., after social login)
     setUser: (state, action) => {
       state.user = action.payload;
       state.isAuthenticated = !!action.payload;
       state.error = null;
     },
-    clearAuthError: (state) => {
+    // Clear any stored error message
+    clearError: (state) => {
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Register
+      // REGISTER
       .addCase(registerUser.pending, (state) => {
         state.isLoading = true;
+        state.error = null;
       })
       .addCase(registerUser.fulfilled, (state) => {
         state.isLoading = false;
       })
-      .addCase(registerUser.rejected, (state, action) => {
+      .addCase(registerUser.rejected, (state, { payload }) => {
         state.isLoading = false;
-        state.error = action.payload;
+        state.error = payload;
       })
 
-      // Login
+      // LOGIN
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
-      })
-      .addCase(loginUser.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.isAuthenticated = action.payload.success;
-        state.user = action.payload.user || null;
         state.error = null;
       })
-      .addCase(loginUser.rejected, (state, action) => {
+      .addCase(loginUser.fulfilled, (state, { payload }) => {
         state.isLoading = false;
-        state.isAuthenticated = false;
-        state.user = null;
-        state.error = action.payload;
+        state.isAuthenticated = payload.success;
+        state.user = payload.user || null;
+      })
+      .addCase(loginUser.rejected, (state, { payload }) => {
+        state.isLoading = false;
+        state.error = payload;
       })
 
-      // Logout
+      // LOGOUT
+      .addCase(logoutUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
       .addCase(logoutUser.fulfilled, (state) => {
+        state.isLoading = false;
         state.isAuthenticated = false;
         state.user = null;
-        state.error = null;
+      })
+      .addCase(logoutUser.rejected, (state, { payload }) => {
+        state.isLoading = false;
+        state.error = payload;
       })
 
-      // Check Auth
+      // CHECK AUTH
       .addCase(checkAuth.pending, (state) => {
         state.isLoading = true;
-      })
-      .addCase(checkAuth.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.isAuthenticated = action.payload.success;
-        state.user = action.payload.user || null;
         state.error = null;
       })
-      .addCase(checkAuth.rejected, (state, action) => {
+      .addCase(checkAuth.fulfilled, (state, { payload }) => {
+        state.isLoading = false;
+        state.isAuthenticated = payload.success;
+        state.user = payload.user || null;
+      })
+      .addCase(checkAuth.rejected, (state, { payload }) => {
         state.isLoading = false;
         state.isAuthenticated = false;
         state.user = null;
-        state.error = action.payload;
+        state.error = payload;
       });
   },
 });
 
-export const { setUser, clearAuthError } = authSlice.actions;
+export const { setUser, clearError } = authSlice.actions;
 export default authSlice.reducer;
